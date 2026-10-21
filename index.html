@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エネルギー変換TECHパズル</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        japanese: ['Zen Maru Gothic', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #0f172a;
+            user-select: none;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* 明るいカードスタイル */
+        .light-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #e2e8f0;
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+        }
+
+        /* 180度反転（対面対戦用） */
+        .rotate-180-upside {
+            transform: rotate(180deg);
+        }
+
+        /* ボタンアニメーション */
+        .energy-btn {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+        }
+        .energy-btn:active {
+            transform: scale(0.92);
+        }
+        .energy-btn.selected-in {
+            border-color: #0284c7 !important;
+            background-color: #e0f2fe !important;
+            box-shadow: 0 0 10px rgba(2, 132, 199, 0.3);
+        }
+        .energy-btn.selected-out {
+            border-color: #d97706 !important;
+            background-color: #fef3c7 !important;
+            box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+        }
+        .energy-btn.selected-both {
+            border-color: #6366f1 !important;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%) !important;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+        }
+
+        /* アニメーション */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.35s ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.92); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Header Navigation -->
+    <header class="w-full border-b border-slate-200 bg-white/90 backdrop-blur-md px-4 py-2.5 z-40 sticky top-0 shadow-sm">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showScreen('menu')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-md">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-black text-lg md:text-xl text-sky-700">
+                        TECH ENERGY PUZZLE
+                    </h1>
+                    <p class="text-[10px] text-slate-500 font-bold">中学校技術科「エネルギー変換の技術」全64問</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleFullscreen()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-700 transition flex items-center gap-1.5 shadow-sm" title="全画面表示">
+                    <i class="fa-solid fa-expand text-sky-600"></i>
+                    <span class="hidden sm:inline">全画面</span>
+                </button>
+                <button onclick="showRanksModal()" class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-xs font-bold text-amber-700 transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-trophy text-amber-500"></i>
+                    <span class="hidden sm:inline">称号</span>一覧
+                </button>
+                <button onclick="showScreen('dictionary')" class="px-3 py-1.5 rounded-xl bg-sky-50 border border-sky-200 hover:bg-sky-100 text-xs font-bold text-sky-700 transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-book-open text-sky-500"></i>
+                    <span class="hidden sm:inline">変換</span>図鑑
+                </button>
+                <button onclick="toggleAudio()" id="btn-sound" class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition" title="効果音 ON/OFF">
+                    <i class="fa-solid fa-volume-high text-sm" id="sound-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col justify-center z-10">
+
+        <!-- ================= 1. MAIN MENU SCREEN ================= -->
+        <section id="screen-menu" class="space-y-6 animate-pop-in">
+            <div class="text-center space-y-3 my-2">
+                <span class="px-3.5 py-1 rounded-full bg-sky-100 text-sky-700 font-bold text-xs border border-sky-200 inline-block shadow-sm">
+                    💡 ワークシートプリント問題 全64問完全網羅！
+                </span>
+                <h2 class="text-3xl md:text-4xl font-black text-slate-800 tracking-wide">
+                    エネルギー変換パズル
+                </h2>
+                <p class="text-xs md:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-bold">
+                    身の回りの製品や技術の（もとのエネルギー）と（変わったあとのエネルギー）を当てよう！
+                </p>
+            </div>
+
+            <!-- Mode Choice Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Time Attack Card -->
+                <div onclick="startTimeAttackMode()" class="light-card p-5 cursor-pointer hover:border-sky-400 hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col justify-between group border-2 border-transparent">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                            ⏱️
+                        </div>
+                        <h3 class="text-lg font-black text-sky-700 font-orbitron">
+                            TIME ATTACK
+                        </h3>
+                        <p class="text-xs text-slate-600 leading-relaxed font-bold">
+                            ランダム10問を最速クリアせよ！誤答は<span class="text-rose-500">+3秒ペナルティ</span>。最高称号を目指そう！
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-sky-600">
+                        <span>1人プレイ (10問)</span>
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+
+                <!-- VS CPU Card -->
+                <div onclick="showCpuDifficultySelect()" class="light-card p-5 cursor-pointer hover:border-indigo-400 hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col justify-between group border-2 border-transparent">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                            🤖
+                        </div>
+                        <h3 class="text-lg font-black text-indigo-700 font-orbitron">
+                            VS CPU BATTLE
+                        </h3>
+                        <p class="text-xs text-slate-600 leading-relaxed font-bold">
+                            AIライバルと全8ラウンドのスピード早押し対戦！正解して勝ち越そう！
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-indigo-600">
+                        <span>CPU対戦 (全8R)</span>
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+
+                <!-- 2P Local Verses Card (1 PC 対面対戦) -->
+                <div onclick="start2PlayerMode()" class="light-card p-5 cursor-pointer hover:border-emerald-400 hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col justify-between group border-2 border-emerald-200 bg-emerald-50/30">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                            👥
+                        </div>
+                        <h3 class="text-lg font-black text-emerald-700 font-orbitron flex items-center gap-1.5">
+                            2P 対面対戦
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-sans">おすすめ</span>
+                        </h3>
+                        <p class="text-xs text-slate-600 leading-relaxed font-bold">
+                            1台の画面に向かい合って友達とリアル対戦！相手側は<span class="text-emerald-700 font-black">180度反転</span>表示されます。
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-emerald-100 flex justify-between items-center text-xs font-bold text-emerald-600">
+                        <span>友達と対面対戦 (全6R)</span>
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Best Records Footer Stats -->
+            <div class="light-card p-4 flex flex-wrap justify-around items-center text-center gap-4 text-xs">
+                <div>
+                    <span class="text-slate-500 block mb-0.5 font-bold">⏱️ ベストタイム</span>
+                    <span id="stat-best-time" class="font-orbitron font-black text-xl text-amber-600">--.- 秒</span>
+                </div>
+                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <div>
+                    <span class="text-slate-500 block mb-0.5 font-bold">🏆 獲得最高称号</span>
+                    <span id="stat-best-rank" class="font-bold text-sky-700">未取得</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 2. CPU DIFFICULTY SELECT SCREEN ================= -->
+        <section id="screen-cpu-select" class="hidden space-y-6 animate-pop-in">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl font-bold text-slate-800">CPUの強さを選択</h2>
+                <p class="text-xs text-slate-500 font-bold">AIの思考スピードと正解率が変わります</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <button onclick="startVsCpuMode('easy')" class="light-card p-5 hover:border-emerald-400 transition text-center space-y-3 group border-2 border-transparent">
+                    <div class="text-4xl">🐢</div>
+                    <div class="font-bold text-emerald-600 text-base">初級 かめロボ</div>
+                    <p class="text-[11px] text-slate-500 font-bold leading-relaxed">思考時間: 3.5〜5.0秒<br>正解率 70%（のんびり）</p>
+                </button>
+
+                <button onclick="startVsCpuMode('normal')" class="light-card p-5 hover:border-amber-400 transition text-center space-y-3 group border-2 border-transparent">
+                    <div class="text-4xl">🦊</div>
+                    <div class="font-bold text-amber-600 text-base">中級 きつねメカ</div>
+                    <p class="text-[11px] text-slate-500 font-bold leading-relaxed">思考時間: 2.0〜3.2秒<br>正解率 88%（歯ごたえあり）</p>
+                </button>
+
+                <button onclick="startVsCpuMode('hard')" class="light-card p-5 hover:border-rose-400 transition text-center space-y-3 group border-2 border-transparent">
+                    <div class="text-4xl">⚡</div>
+                    <div class="font-bold text-rose-600 text-base">上級 超電導AI</div>
+                    <p class="text-[11px] text-slate-500 font-bold leading-relaxed">思考時間: 1.0〜1.8秒<br>正解率 98%（爆速無敵！）</p>
+                </button>
+            </div>
+
+            <div class="text-center">
+                <button onclick="showScreen('menu')" class="px-6 py-2 rounded-xl bg-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-300 transition">
+                    戻る
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 3. GAME PLAY SCREEN (SINGLE PLAYER) ================= -->
+        <section id="screen-game" class="hidden space-y-4 animate-pop-in">
+            <!-- Game Top Status Header -->
+            <div class="light-card p-3 md:p-4 flex justify-between items-center relative overflow-hidden">
+                <div class="flex items-center gap-3">
+                    <span id="game-mode-badge" class="px-2.5 py-1 rounded-lg bg-sky-100 text-sky-700 font-bold text-xs border border-sky-200">
+                        TIME ATTACK
+                    </span>
+                    <span id="game-progress" class="font-orbitron font-bold text-sm text-slate-700">
+                        1 / 10
+                    </span>
+                </div>
+
+                <!-- Penalty Toast Alert -->
+                <div id="penalty-toast" class="hidden absolute left-1/2 -translate-x-1/2 bg-rose-500 text-white font-black text-xs px-3.5 py-1 rounded-full shadow-lg animate-bounce z-20">
+                    +3秒 PENALTY! 💥
+                </div>
+
+                <!-- Game Timer / CPU Scores Display -->
+                <div>
+                    <div id="display-timer-box" class="flex items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-sky-500 text-sm"></i>
+                        <span id="game-timer" class="font-orbitron font-black text-2xl text-sky-700">0.00</span>
+                        <span class="text-xs text-slate-500 font-mono font-bold">s</span>
+                    </div>
+
+                    <div id="display-cpu-scores" class="hidden flex items-center gap-4 text-xs font-bold">
+                        <div class="text-sky-600">YOU: <span id="cpu-score-player" class="font-orbitron text-base font-black">0</span>pt</div>
+                        <div class="text-indigo-600">CPU: <span id="cpu-score-ai" class="font-orbitron text-base font-black">0</span>pt</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Thinking Progress Bar (VS Mode Only) -->
+            <div id="cpu-status-bar" class="hidden light-card p-2 px-4 space-y-1">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-600 flex items-center gap-1.5 font-bold">
+                        <span id="cpu-icon">🤖</span> AI思考ステータス:
+                    </span>
+                    <span id="cpu-state-text" class="font-bold text-amber-600">回答を考え中...</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                    <div id="cpu-progress-fill" class="bg-gradient-to-r from-amber-400 to-indigo-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+            </div>
+
+            <!-- Appliance / Target Question Card -->
+            <div id="question-card" class="light-card p-5 text-center space-y-2 relative overflow-hidden transition-all border-2 border-sky-100">
+                <div class="inline-block px-3 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-[11px] text-sky-700 font-bold">
+                    Q. この技術のエネルギー変換は？
+                </div>
+
+                <div id="q-emoji" class="text-6xl my-1 filter drop-shadow transition-transform hover:scale-105 duration-200">
+                    👔
+                </div>
+
+                <h3 id="q-title" class="text-2xl md:text-3xl font-black text-slate-800">
+                    アイロン
+                </h3>
+            </div>
+
+            <!-- Energy Selection Target Slots & Buttons -->
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Slot 1: Input Energy -->
+                    <div onclick="clearSelection('input')" class="light-card p-3 text-center border-2 border-slate-200 cursor-pointer hover:border-sky-400 transition" id="slot-input-card">
+                        <span class="text-[10px] font-bold text-sky-600 block mb-0.5">① 入力エネルギー (もと)</span>
+                        <div id="slot-input-val" class="text-sm font-bold text-slate-400">タップして選択</div>
+                    </div>
+
+                    <!-- Slot 2: Output Energy -->
+                    <div onclick="clearSelection('output')" class="light-card p-3 text-center border-2 border-slate-200 cursor-pointer hover:border-amber-400 transition" id="slot-output-card">
+                        <span class="text-[10px] font-bold text-amber-600 block mb-0.5">② 出力エネルギー (結果)</span>
+                        <div id="slot-output-val" class="text-sm font-bold text-slate-400">タップして選択</div>
+                    </div>
+                </div>
+
+                <!-- 6 Energy Type Option Buttons -->
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    <button onclick="selectEnergy('electric')" id="btn-energy-electric" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-amber-400">
+                        <span class="text-2xl mb-0.5">⚡</span>
+                        <span class="text-xs font-black text-amber-600">電気</span>
+                    </button>
+                    <button onclick="selectEnergy('thermal')" id="btn-energy-thermal" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-rose-400">
+                        <span class="text-2xl mb-0.5">🔥</span>
+                        <span class="text-xs font-black text-rose-600">熱</span>
+                    </button>
+                    <button onclick="selectEnergy('kinetic')" id="btn-energy-kinetic" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-sky-400">
+                        <span class="text-2xl mb-0.5">⚙️</span>
+                        <span class="text-xs font-black text-sky-600">運動</span>
+                    </button>
+                    <button onclick="selectEnergy('light')" id="btn-energy-light" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-yellow-400">
+                        <span class="text-2xl mb-0.5">💡</span>
+                        <span class="text-xs font-black text-yellow-600">光</span>
+                    </button>
+                    <button onclick="selectEnergy('sound')" id="btn-energy-sound" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-purple-400">
+                        <span class="text-2xl mb-0.5">🔊</span>
+                        <span class="text-xs font-black text-purple-600">信号・音</span>
+                    </button>
+                    <button onclick="selectEnergy('chemical')" id="btn-energy-chemical" class="energy-btn light-card p-2.5 flex flex-col items-center justify-center border border-slate-200 hover:border-emerald-400">
+                        <span class="text-2xl mb-0.5">🧪</span>
+                        <span class="text-xs font-black text-emerald-600">化学</span>
+                    </button>
+                </div>
+
+                <!-- Submit Answer Button -->
+                <button id="btn-submit-answer" onclick="submitAnswer()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-sky-600 text-white font-black text-base shadow-lg transition opacity-50 cursor-not-allowed" disabled>
+                    ⚡ 回答を決定する！
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 4. 2P LOCAL VS GAME SCREEN (対面180度反転対戦) ================= -->
+        <section id="screen-game-2p" class="hidden space-y-3 animate-pop-in">
+            <!-- 2P Local Verses Container -->
+            <div class="flex flex-col space-y-3">
+
+                <!-- Player 2 Area (Top, Rotated 180deg) -->
+                <div class="rotate-180-upside light-card p-3.5 space-y-2 border-2 border-indigo-300 bg-indigo-50/20 shadow-md">
+                    <div class="flex justify-between items-center border-b border-indigo-100 pb-1.5">
+                        <span class="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-black text-xs">
+                            PLAYER 2 (相手)
+                        </span>
+                        <span class="font-orbitron font-black text-base text-indigo-700">
+                            SCORE: <span id="p2-score-val">0</span>
+                        </span>
+                    </div>
+
+                    <!-- P2 Question Display -->
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-xl border border-indigo-100">
+                        <span id="p2-q-emoji" class="text-3xl">👔</span>
+                        <div>
+                            <div class="text-[10px] text-indigo-600 font-bold">お題</div>
+                            <div id="p2-q-title" class="text-base font-black text-slate-800">アイロン</div>
+                        </div>
+                    </div>
+
+                    <!-- P2 Input/Output Slots -->
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs font-bold">
+                        <div id="p2-slot-in" class="p-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-500">入力: 未選択</div>
+                        <div id="p2-slot-out" class="p-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-500">出力: 未選択</div>
+                    </div>
+
+                    <!-- P2 Energy Choice Buttons -->
+                    <div class="grid grid-cols-6 gap-1">
+                        <button onclick="p2SelectEnergy('electric')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-amber-50">⚡<br>電気</button>
+                        <button onclick="p2SelectEnergy('thermal')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-rose-50">🔥<br>熱</button>
+                        <button onclick="p2SelectEnergy('kinetic')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-sky-50">⚙️<br>運動</button>
+                        <button onclick="p2SelectEnergy('light')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-yellow-50">💡<br>光</button>
+                        <button onclick="p2SelectEnergy('sound')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-purple-50">🔊<br>信号・音</button>
+                        <button onclick="p2SelectEnergy('chemical')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-emerald-50">🧪<br>化学</button>
+                    </div>
+
+                    <button id="p2-btn-submit" onclick="p2SubmitAnswer()" class="w-full py-2 bg-indigo-600 text-white font-black rounded-lg text-sm shadow opacity-50 cursor-not-allowed" disabled>
+                        P2 回答を決定！
+                    </button>
+                </div>
+
+                <!-- Center Divider & Control Bar -->
+                <div class="py-1.5 px-3 light-card flex justify-between items-center bg-slate-100 text-xs font-bold text-slate-700 border-x-4 border-emerald-500 shadow-sm">
+                    <button onclick="showScreen('menu')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 rounded text-[11px] font-bold">
+                        中断
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span>⚔️ ROUND <span id="2p-round-num" class="font-orbitron font-black text-sky-700 text-sm">1</span> / 6</span>
+                        <button onclick="toggleFullscreen()" class="px-2 py-0.5 rounded bg-sky-100 text-sky-700 text-[10px] border border-sky-300">⛶ 全画面</button>
+                    </div>
+                    <span id="2p-status-msg" class="text-emerald-700 font-bold hidden sm:inline">速く正解した方にポイント！</span>
+                </div>
+
+                <!-- Player 1 Area (Bottom, Normal Orientation) -->
+                <div class="light-card p-3.5 space-y-2 border-2 border-sky-300 bg-sky-50/20 shadow-md">
+                    <div class="flex justify-between items-center border-b border-sky-100 pb-1.5">
+                        <span class="px-2.5 py-0.5 rounded-full bg-sky-600 text-white font-black text-xs">
+                            PLAYER 1 (自分)
+                        </span>
+                        <span class="font-orbitron font-black text-base text-sky-700">
+                            SCORE: <span id="p1-score-val">0</span>
+                        </span>
+                    </div>
+
+                    <!-- P1 Question Display -->
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-xl border border-sky-100">
+                        <span id="p1-q-emoji" class="text-3xl">👔</span>
+                        <div>
+                            <div class="text-[10px] text-sky-600 font-bold">お題</div>
+                            <div id="p1-q-title" class="text-base font-black text-slate-800">アイロン</div>
+                        </div>
+                    </div>
+
+                    <!-- P1 Input/Output Slots -->
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs font-bold">
+                        <div id="p1-slot-in" class="p-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-500">入力: 未選択</div>
+                        <div id="p1-slot-out" class="p-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-500">出力: 未選択</div>
+                    </div>
+
+                    <!-- P1 Energy Choice Buttons -->
+                    <div class="grid grid-cols-6 gap-1">
+                        <button onclick="p1SelectEnergy('electric')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-amber-50">⚡<br>電気</button>
+                        <button onclick="p1SelectEnergy('thermal')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-rose-50">🔥<br>熱</button>
+                        <button onclick="p1SelectEnergy('kinetic')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-sky-50">⚙️<br>運動</button>
+                        <button onclick="p1SelectEnergy('light')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-yellow-50">💡<br>光</button>
+                        <button onclick="p1SelectEnergy('sound')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-purple-50">🔊<br>信号・音</button>
+                        <button onclick="p1SelectEnergy('chemical')" class="p-1.5 text-center bg-white rounded-lg border border-slate-200 text-xs font-black hover:bg-emerald-50">🧪<br>化学</button>
+                    </div>
+
+                    <button id="p1-btn-submit" onclick="p1SubmitAnswer()" class="w-full py-2 bg-sky-600 text-white font-black rounded-lg text-sm shadow opacity-50 cursor-not-allowed" disabled>
+                        P1 回答を決定！
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Explanation Modal Popup (Between Questions) -->
+        <div id="modal-explanation" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="light-card p-6 max-w-md w-full text-center space-y-4 border-2 border-emerald-400 shadow-2xl animate-pop-in">
+                <div class="text-3xl font-black text-emerald-600">✨ 正解！</div>
+                <div id="exp-emoji-title" class="text-lg font-bold text-sky-800"></div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed font-bold text-left" id="exp-text">
+                    解説テキスト
+                </div>
+                <button onclick="closeExplanation()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm transition shadow-md">
+                    次の問題へ ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- Ranks List Modal Popup (称号一覧) -->
+        <div id="modal-ranks" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="light-card p-6 max-w-md w-full space-y-4 border-2 border-amber-300 shadow-2xl animate-pop-in">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <h3 class="text-lg font-black text-amber-600 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> 獲得可能称号一覧 (タイムアタック)
+                    </h3>
+                    <button onclick="closeRanksModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+                </div>
+
+                <div class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 text-xs font-bold">
+                    <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-amber-700 font-black block">⚡【SSS級】「【神速】エネルギーマスター」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 15.0秒未満</span>
+                        </div>
+                        <span class="text-xl">👑</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-sky-700 font-black block">🏆【SS級】「【特級】技術科エース研究員」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 22.0秒未満</span>
+                        </div>
+                        <span class="text-xl">🏆</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-indigo-700 font-black block">🌟【S級】「【1級】エネルギースペシャリスト」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 30.0秒未満</span>
+                        </div>
+                        <span class="text-xl">🌟</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-emerald-700 font-black block">🏅【A級】「【2級】エネルギープランナー」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 40.0秒未満</span>
+                        </div>
+                        <span class="text-xl">🏅</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-slate-700 font-black block">🔰【B級】「【3級】見習いエンジニア」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 55.0秒未満</span>
+                        </div>
+                        <span class="text-xl">🔰</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-slate-600 font-black block">🐣【C級】「【初心者】テクノロジー学習生」</span>
+                            <span class="text-[10px] text-slate-500">クリアタイム: 55.0秒以上</span>
+                        </div>
+                        <span class="text-xl">🐣</span>
+                    </div>
+                </div>
+
+                <button onclick="closeRanksModal()" class="w-full py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-black text-xs transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 5. RESULT SCREEN ================= -->
+        <section id="screen-result" class="hidden space-y-6 animate-pop-in my-auto">
+            <div class="light-card p-6 md:p-8 text-center space-y-6 border-2 border-sky-300 shadow-2xl relative overflow-hidden">
+                <div class="space-y-1">
+                    <span id="result-mode-title" class="text-xs font-mono tracking-widest text-sky-600 uppercase font-bold">GAME RESULT</span>
+                    <h2 id="result-heading" class="text-3xl font-black text-slate-800">チャレンジ完了！</h2>
+                </div>
+
+                <!-- Time Attack Rank Badge Display -->
+                <div id="result-ta-container" class="space-y-4">
+                    <div class="py-1">
+                        <span class="text-xs text-slate-500 font-bold block mb-1">最終クリアタイム</span>
+                        <div id="result-clear-time" class="font-orbitron font-black text-4xl md:text-5xl text-sky-600">
+                            15.40 <span class="text-xl">秒</span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 max-w-md mx-auto space-y-2">
+                        <span class="text-[11px] text-amber-700 font-bold block">獲得した評価ランク称号</span>
+                        <div id="result-rank-title" class="font-black text-xl md:text-2xl text-amber-800">
+                            🥇 S級 🌟「1級エネルギースペシャリスト」
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VS CPU & 2P Result Display -->
+                <div id="result-cpu-container" class="hidden space-y-4">
+                    <div id="result-cpu-banner" class="text-4xl md:text-5xl font-black font-orbitron text-indigo-600">
+                        VICTORY!
+                    </div>
+                    <div class="flex justify-center items-center gap-8 py-2">
+                        <div class="text-center">
+                            <span id="res-label-p1" class="text-xs text-slate-500 block font-bold">YOU (P1)</span>
+                            <span id="res-score-player" class="font-orbitron font-black text-3xl text-sky-600">4800</span>
+                        </div>
+                        <span class="font-orbitron font-bold text-2xl text-slate-400">VS</span>
+                        <div class="text-center">
+                            <span id="res-label-p2" class="text-xs text-slate-500 block font-bold">CPU (P2)</span>
+                            <span id="res-score-cpu" class="font-orbitron font-black text-3xl text-indigo-600">2400</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technology Key Concept Review Box -->
+                <div class="p-3 bg-sky-50 rounded-xl text-left text-xs text-slate-700 max-w-md mx-auto space-y-1 border border-sky-200 font-bold">
+                    <span class="font-black text-sky-800 flex items-center gap-1">
+                        <i class="fa-solid fa-lightbulb text-amber-500"></i> 技術科のポイント:
+                    </span>
+                    <p class="leading-relaxed">エネルギーは様々な形態（運動・電気・熱・光・化学・信号）に相互変換されて利用されます。それぞれの特徴をしっかりマスターしよう！</p>
+                </div>
+
+                <!-- Result Navigation Buttons -->
+                <div class="flex flex-wrap justify-center gap-3 pt-2">
+                    <button onclick="showScreen('menu')" class="px-5 py-3 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition">
+                        <i class="fa-solid fa-house mr-1"></i> メインメニュー
+                    </button>
+                    <button onclick="retryCurrentMode()" class="px-7 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:opacity-90 text-white font-black text-xs shadow-md transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> もう一度挑戦！
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 6. ENERGY DICTIONARY SCREEN ================= -->
+        <section id="screen-dictionary" class="hidden space-y-4 animate-pop-in">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-sky-600"></i> エネルギー変換図鑑 (全64問)
+                    </h2>
+                    <p class="text-xs text-slate-500 font-bold">ワークシート記載のすべての製品・技術</p>
+                </div>
+                <button onclick="showScreen('menu')" class="px-4 py-2 rounded-xl bg-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-300">
+                    閉じる
+                </button>
+            </div>
+
+            <!-- Dictionary Grid Container -->
+            <div id="dictionary-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[65vh] overflow-y-auto pr-1">
+                <!-- Dynamically Inserted Cards -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-3 text-[11px] text-slate-500 border-t border-slate-200 bg-white/60 font-bold">
+        中学校技術科「エネルギー変換の技術」学習教材Webアプリ
+    </footer>
+
+    <script>
+        /* ================= Fullscreen Toggle ================= */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`全画面表示エラー: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        /* ================= Web Audio API Sound Engine ================= */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // iOS Safari等のサスペンド復帰対策
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playTap() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+                    gain.gain.setValueAtTime(0, now + idx * 0.06);
+                    gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.06 + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.22);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.22);
+                });
+            }
+
+            playIncorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(90, now + 0.22);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.22);
+            }
+
+            playFanfare() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const arpeggio = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+                arpeggio.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.35);
+                });
+            }
+        }
+
+        const audio = new SoundEngine();
+
+        function toggleAudio() {
+            audio.enabled = !audio.enabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = audio.enabled ? "fa-solid fa-volume-high text-sm text-slate-600" : "fa-solid fa-volume-xmark text-sm text-slate-400";
+        }
+
+        /* ================= 64 Questions Database (画像3枚の表を完全収録) ================= */
+        const ENERGY_NAMES = {
+            electric: '電気 ⚡',
+            thermal:  '熱 🔥',
+            kinetic:  '運動 ⚙️',
+            light:    '光 💡',
+            sound:    '信号 🔊',
+            chemical: '化学 🧪'
+        };
+
+        const QUESTION_DATABASE = [
+            // --- 画像1 (image_60a11f.png) ---
+            { id: 1, emoji: '🚲', title: '自転車', in: 'kinetic', out: 'kinetic', exp: '【運動 → 運動】人がペダルを漕ぐ運動エネルギーを、車輪の回転運動に変換します。' },
+            { id: 2, emoji: '🖱️', title: 'マウス', in: 'kinetic', out: 'electric', exp: '【運動 → 電気】手で動かす運動やクリックの運動を電気信号に変換してパソコンに送ります。' },
+            { id: 3, emoji: '⌨️', title: 'キーボード', in: 'kinetic', out: 'electric', exp: '【運動 → 電気】キーを押す指の運動エネルギーを電気信号に変換します。' },
+            { id: 4, emoji: '🧮', title: '電卓', in: 'kinetic', out: 'electric', exp: '【運動 → 電気】ボタンを押す運動エネルギーを電気信号に変換して計算処理を行います。' },
+            { id: 5, emoji: '🌊', title: '水力発電', in: 'kinetic', out: 'electric', exp: '【運動 → 電気】水が高い所から落ちる水流の運動エネルギーでタービンを回して電気を作ります。' },
+            { id: 6, emoji: '🌬️', title: '風力発電', in: 'kinetic', out: 'electric', exp: '【運動 → 電気】風の力（運動エネルギー）でブレードを回転させて発電します。' },
+            { id: 7, emoji: '🛢️', title: 'オイルヒーター', in: 'chemical', out: 'thermal', exp: '【化学 → 熱】灯油やオイル燃料の化学エネルギーを燃焼させて熱エネルギーに変換します。' },
+            { id: 8, emoji: '🚗', title: 'ガソリン車', in: 'chemical', out: 'kinetic', exp: '【化学 → 運動】ガソリンの爆発（化学変化）によりピストンを動かし運動エネルギーに変えます。' },
+            { id: 9, emoji: '🍳', title: 'ガスコンロ', in: 'chemical', out: 'thermal', exp: '【化学 → 熱】ガスの化学エネルギーを燃焼（化学反応）させて熱を作ります。' },
+            { id: 10, emoji: '🚢', title: '煙を出す船', in: 'chemical', out: 'kinetic', exp: '【化学 → 運動】重油などの燃料の化学エネルギーを燃やしてスクリューを動かします。' },
+            { id: 11, emoji: '✈️', title: '飛行機', in: 'chemical', out: 'kinetic', exp: '【化学 → 運動】ジェット燃料の化学エネルギーを燃焼させ推進力（運動）を得ます。' },
+            { id: 12, emoji: '🚀', title: 'ロケット', in: 'chemical', out: 'kinetic', exp: '【化学 → 運動】ロケット燃料の化学反応による爆発的なガス噴射で運動エネルギーを作ります。' },
+            { id: 13, emoji: '🏍️', title: 'バイク', in: 'chemical', out: 'kinetic', exp: '【化学 → 運動】ガソリンの化学エネルギーを燃焼させてエンジンを回転（運動）させます。' },
+            { id: 14, emoji: '⚛️', title: '原子力発電', in: 'chemical', out: 'electric', exp: '【化学 → 電気】ウランの核反応（化学・原子レベルのエネルギー）による熱で蒸気を生み出し発電します。' },
+            { id: 15, emoji: '♨️', title: 'お風呂(ガス)', in: 'chemical', out: 'thermal', exp: '【化学 → 熱】ガスの燃焼（化学変化）で発生した熱でお湯を沸かします。' },
+            { id: 16, emoji: '💣', title: '爆弾', in: 'chemical', out: 'thermal', exp: '【化学 → 熱】火薬の急激な化学反応によって強い熱と衝撃波を生み出します。' },
+            { id: 17, emoji: '☀️', title: '太陽光パネル', in: 'light', out: 'electric', exp: '【光 → 電気】太陽の光エネルギーが半導体に当たることで光電効果により電気に変えます。' },
+            { id: 18, emoji: '🎙️', title: 'マイク', in: 'sound', out: 'electric', exp: '【信号 → 電気】声や音の空気振動（音声信号）をダイアフラムで拾い電気信号に変換します。' },
+            { id: 19, emoji: '📞', title: '電話機(話す側)', in: 'sound', out: 'electric', exp: '【信号 → 電気】人の声（音声信号）をマイク機能で電気信号に変換して送信します。' },
+            { id: 20, emoji: '📺', title: 'テレビの画面', in: 'electric', out: 'light', exp: '【電気 → 光】電気エネルギーで画素素子やバックライトを発光させて映像（光）を映します。' },
+            { id: 21, emoji: '🔊', title: 'テレビの音声', in: 'electric', out: 'sound', exp: '【電気 → 信号】電気信号をスピーカーで振動に変換し、音（音声信号）を発生させます。' },
+
+            // --- 画像2 (image_60a19d.png) ---
+            { id: 22, emoji: '🔥', title: '電気ヒータ', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電熱線の抵抗を利用して電気を熱エネルギーに変えます。' },
+            { id: 23, emoji: '🚙', title: '電気自動車', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】バッテリーの電気でモーターを回し走る運動エネルギーに変えます。' },
+            { id: 24, emoji: '💡', title: 'LED照明', in: 'electric', out: 'light', exp: '【電気 → 光】半導体に電流を流し、効率よく光エネルギーへ変換します。' },
+            { id: 25, emoji: '🚦', title: '信号機', in: 'electric', out: 'light', exp: '【電気 → 光】電気によって赤・黄・青のLEDを発光させて光信号を作ります。' },
+            { id: 26, emoji: '💈', title: 'ドライヤー', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電熱線を発熱させ、ファンで温風を送り出します。' },
+            { id: 27, emoji: '❄️', title: 'エアコン', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気でヒートポンプを動かし熱を移動させて冷暖房を行います。' },
+            { id: 28, emoji: '🎛️', title: '電子レンジ', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気でマイクロ波を発射し、水分子を振動させて加熱します。' },
+            { id: 29, emoji: '🧊', title: '冷蔵庫', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気でコンプレッサーを動かし庫内の熱を外に逃がして冷却します。' },
+            { id: 30, emoji: '🌀', title: '扇風機', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターで羽根を回転させて風を起こします。' },
+            { id: 31, emoji: '💻', title: 'パソコンの画面', in: 'electric', out: 'light', exp: '【電気 → 光】電気エネルギーでモニターの液晶やLEDを発光させます。' },
+            { id: 32, emoji: '📱', title: 'スマホの画面', in: 'electric', out: 'light', exp: '【電気 → 光】バッテリーの電気でディスプレイを発光させ映像を見せます。' },
+            { id: 33, emoji: '📻', title: 'ラジオ', in: 'electric', out: 'sound', exp: '【電気 → 信号】電波の電気信号を音声信号（音）に変換して出力します。' },
+            { id: 34, emoji: '🚃', title: '電車', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】架線からの電気で強力なモーターを回して走行させます。' },
+            { id: 35, emoji: '⌚', title: '電子時計', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電池の電気で水晶振動子を揺らし、針やモーターを動かします。' },
+            { id: 36, emoji: '🧹', title: '掃除機', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】高速回転モーターで強力な吸気（運動）を生み出します。' },
+            { id: 37, emoji: '🎧', title: 'イヤホン', in: 'electric', out: 'sound', exp: '【電気 → 信号】電気信号で超小型振動板を揺らして耳元で音を作ります。' },
+            { id: 38, emoji: '🔊', title: 'スピーカー', in: 'electric', out: 'sound', exp: '【電気 → 信号】電気信号の強弱で磁石と振動板を揺らし音に変えます。' },
+            { id: 39, emoji: '🎮', title: 'ゲーム機の画面', in: 'electric', out: 'light', exp: '【電気 → 光】電気エネルギーで液晶画面を発光させてゲーム画面を表現します。' },
+            { id: 40, emoji: '🧺', title: '洗濯機', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気でパルセーター（水車）やドラムを回転させて洗います。' },
+            { id: 41, emoji: '🧵', title: 'ミシン', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターで針を上下に素早く動かして布を縫います。' },
+            { id: 42, emoji: '💇', title: 'ヘアアイロン', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気プレートを発熱させて髪の毛の癖を伸ばします。' },
+
+            // --- 画像3 (image_60a1bb.png) ---
+            { id: 43, emoji: '🖨️', title: 'プリンター', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気で用紙搬送モーターやインクヘッドを運動させます。' },
+            { id: 44, emoji: '🍚', title: '炊飯器', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気ヒーターやIH加熱でお釜を熱して米を炊きます。' },
+            { id: 45, emoji: '🫙', title: 'ミキサー', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターで刃を高速回転させて食材を細かく砕きます。' },
+            { id: 46, emoji: '🍽️', title: '食洗器', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気でポンプノズルを回転・噴射（運動）させて食器を洗います。' },
+            { id: 47, emoji: '🎧', title: 'ヘッドホン', in: 'electric', out: 'sound', exp: '【電気 → 信号】電気信号で大きな振動板を振動させて音を生み出します。' },
+            { id: 48, emoji: '👔', title: 'アイロン', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気抵抗を利用して熱を生み出し服のシワを伸ばします。' },
+            { id: 49, emoji: '🪵', title: 'こたつ', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気ヒーターの熱放射で布団の中を暖めます。' },
+            { id: 50, emoji: '📹', title: 'プロジェクター', in: 'electric', out: 'light', exp: '【電気 → 光】強力な光源ランプ（電気）を光らせてスクリーンへ映像を投影します。' },
+            { id: 51, emoji: '🍳', title: 'IH(電気コンロ)', in: 'electric', out: 'thermal', exp: '【電気 → 熱】渦電流（電磁誘導）により金属鍋自体を発熱させます。' },
+            { id: 52, emoji: '🪥', title: '電動歯ブラシ', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターやアクチュエータでブラシを高速微振動させます。' },
+            { id: 53, emoji: '🌀', title: '換気扇', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターで羽根を回して空気の流れ（運動）を作ります。' },
+            { id: 54, emoji: '🚨', title: '防犯ブザー', in: 'electric', out: 'sound', exp: '【電気 → 信号】電池の電気でスピーカーを強烈に振動させ大音量（信号）を鳴らします。' },
+            { id: 55, emoji: '⏱️', title: 'タイマー', in: 'electric', out: 'sound', exp: '【電気 → 信号】時間が来ると電気信号でアラーム音（信号）を発信します。' },
+            { id: 56, emoji: '🛁', title: 'お風呂(電気)', in: 'electric', out: 'thermal', exp: '【電気 → 熱】電気温水器やヒーターで効率よくお湯を温めます。' },
+            { id: 57, emoji: '🤖', title: '自動掃除機', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】バッテリーの電気で車輪やブラシを回転させて自動走行します。' },
+            { id: 58, emoji: '☎️', title: '電話機(聞く側)', in: 'electric', out: 'sound', exp: '【電気 → 信号】受信した電気信号を受話器のスピーカーで音声（信号）に変えます。' },
+            { id: 59, emoji: '🫖', title: '電気ポット', in: 'electric', out: 'thermal', exp: '【電気 → 熱】底部の強大な電熱ヒーターで水を素早く保温・沸騰させます。' },
+            { id: 60, emoji: '💆', title: 'マッサージ機', in: 'electric', out: 'kinetic', exp: '【電気 → 運動】電気モーターで揉み玉やエアバッグを物理的に動かします。' },
+            { id: 61, emoji: '🔋', title: '電池', in: 'electric', out: 'chemical', exp: '【電気 → 化学】充電時に電気エネルギーを化学物質の形（化学エネルギー）で蓄えます。' },
+            { id: 62, emoji: '🌡️', title: '体温計', in: 'thermal', out: 'electric', exp: '【熱 → 電気】体温（熱）をセンサー（熱電対）で微弱な電気信号に変換して測定します。' },
+            { id: 63, emoji: '🏭', title: '火力発電', in: 'thermal', out: 'electric', exp: '【熱 → 電気】化石燃料を燃やした熱で高圧蒸気を作りタービン（発電機）を回して電気を作ります。' },
+            { id: 64, emoji: '🌋', title: '地熱発電', in: 'thermal', out: 'electric', exp: '【熱 → 電気】地球内部のマグマの熱エネルギーで蒸気を作ってタービンを回し発電します。' }
+        ];
+
+        /* ================= Game Engine State ================= */
+        let currentMode = 'menu';
+        let gameType = 'ta'; // 'ta', 'cpu', '2p'
+        let cpuDiff = 'normal';
+
+        let questionQueue = [];
+        let currentQIndex = 0;
+        let selectedInput = null;
+        let selectedOutput = null;
+
+        // Timer Handles
+        let timerStart = 0;
+        let timerInterval = null;
+        let elapsedTime = 0;
+        let penaltyTime = 0;
+
+        // CPU & Question Navigation Timers
+        let cpuTimer = null;
+        let cpuProgressInterval = null;
+        let nextQTimer = null;
+        let roundResponded = false;
+
+        // Scores & Player States
+        let playerScore = 0;
+        let cpuScore = 0;
+        let p1Score = 0;
+        let p2Score = 0;
+        let p1Input = null, p1Output = null;
+        let p2Input = null, p2Output = null;
+
+        // Local Storage Best Records
+        let bestTime = localStorage.getItem('tech_puzzle_best_time') || null;
+        let bestRank = localStorage.getItem('tech_puzzle_best_rank') || null;
+
+        function clearAllTimers() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (cpuTimer) clearTimeout(cpuTimer);
+            if (cpuProgressInterval) clearInterval(cpuProgressInterval);
+            if (nextQTimer) clearTimeout(nextQTimer);
+            timerInterval = null;
+            cpuTimer = null;
+            cpuProgressInterval = null;
+            nextQTimer = null;
+        }
+
+        function updateStatsDisplay() {
+            if (bestTime) {
+                document.getElementById('stat-best-time').textContent = `${parseFloat(bestTime).toFixed(2)} 秒`;
+                document.getElementById('stat-best-rank').textContent = bestRank || '取得済';
+            }
+        }
+
+        function showScreen(screenId) {
+            audio.playTap();
+            clearAllTimers(); // 画面切替時に全タイマーをキャンセル
+
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+            currentMode = screenId;
+
+            if (screenId === 'dictionary') renderDictionary();
+        }
+
+        function showRanksModal() {
+            audio.playTap();
+            document.getElementById('modal-ranks').classList.remove('hidden');
+        }
+
+        function closeRanksModal() {
+            audio.playTap();
+            document.getElementById('modal-ranks').classList.add('hidden');
+        }
+
+        /* ================= MODE 1: TIME ATTACK ================= */
+        function startTimeAttackMode() {
+            gameType = 'ta';
+            questionQueue = [...QUESTION_DATABASE].sort(() => Math.random() - 0.5).slice(0, 10);
+            currentQIndex = 0;
+            elapsedTime = 0;
+            penaltyTime = 0;
+
+            document.getElementById('game-mode-badge').textContent = 'TIME ATTACK';
+            document.getElementById('game-mode-badge').className = 'px-2.5 py-1 rounded-lg bg-sky-100 text-sky-700 font-bold text-xs border border-sky-200';
+            document.getElementById('display-timer-box').classList.remove('hidden');
+            document.getElementById('display-cpu-scores').classList.add('hidden');
+            document.getElementById('cpu-status-bar').classList.add('hidden');
+
+            showScreen('game');
+            loadQuestion();
+            startTimer();
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerStart = Date.now() - (elapsedTime - penaltyTime) * 1000;
+            timerInterval = setInterval(() => {
+                elapsedTime = (Date.now() - timerStart) / 1000 + penaltyTime;
+                document.getElementById('game-timer').textContent = elapsedTime.toFixed(2);
+            }, 30);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        /* ================= MODE 2: VS CPU BATTLE ================= */
+        function showCpuDifficultySelect() {
+            showScreen('cpu-select');
+        }
+
+        function startVsCpuMode(diff) {
+            gameType = 'cpu';
+            cpuDiff = diff;
+            questionQueue = [...QUESTION_DATABASE].sort(() => Math.random() - 0.5).slice(0, 8);
+            currentQIndex = 0;
+            playerScore = 0;
+            cpuScore = 0;
+
+            document.getElementById('game-mode-badge').textContent = `VS CPU (${diff.toUpperCase()})`;
+            document.getElementById('game-mode-badge').className = 'px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200';
+            document.getElementById('display-timer-box').classList.add('hidden');
+            document.getElementById('display-cpu-scores').classList.remove('hidden');
+            document.getElementById('cpu-status-bar').classList.remove('hidden');
+
+            document.getElementById('cpu-score-player').textContent = '0';
+            document.getElementById('cpu-score-ai').textContent = '0';
+
+            showScreen('game');
+            loadQuestion();
+            scheduleCpuResponse();
+        }
+
+        function scheduleCpuResponse() {
+            clearAllTimers();
+            roundResponded = false;
+
+            const progressBar = document.getElementById('cpu-progress-fill');
+            progressBar.style.width = '0%';
+
+            document.getElementById('cpu-state-text').textContent = '思考中...';
+            document.getElementById('cpu-state-text').className = 'font-bold text-amber-600';
+
+            let minTime = cpuDiff === 'easy' ? 3500 : cpuDiff === 'normal' ? 2000 : 1000;
+            let maxTime = cpuDiff === 'easy' ? 5000 : cpuDiff === 'normal' ? 3200 : 1800;
+            let targetDelay = Math.random() * (maxTime - minTime) + minTime;
+
+            let startTime = Date.now();
+            cpuProgressInterval = setInterval(() => {
+                let elapsed = Date.now() - startTime;
+                let pct = Math.min(100, (elapsed / targetDelay) * 100);
+                progressBar.style.width = `${pct}%`;
+                if (pct >= 100) clearInterval(cpuProgressInterval);
+            }, 50);
+
+            cpuTimer = setTimeout(() => {
+                if (roundResponded) return;
+
+                let accuracy = cpuDiff === 'easy' ? 0.70 : cpuDiff === 'normal' ? 0.88 : 0.98;
+                let isCorrect = Math.random() < accuracy;
+
+                if (isCorrect) {
+                    roundResponded = true;
+                    cpuScore += 500;
+                    document.getElementById('cpu-score-ai').textContent = cpuScore;
+                    document.getElementById('cpu-state-text').textContent = '⚡ CPUが先に正解！ (+500pt)';
+                    document.getElementById('cpu-state-text').className = 'font-bold text-rose-600';
+                    audio.playIncorrect();
+
+                    nextQTimer = setTimeout(() => {
+                        nextQuestion();
+                    }, 1200);
+                } else {
+                    document.getElementById('cpu-state-text').textContent = '❌ CPUが失敗！チャンス！';
+                    document.getElementById('cpu-state-text').className = 'font-bold text-slate-500';
+                }
+            }, targetDelay);
+        }
+
+        /* ================= MODE 3: 2P LOCAL VERSUS (対面対戦) ================= */
+        function start2PlayerMode() {
+            gameType = '2p';
+            questionQueue = [...QUESTION_DATABASE].sort(() => Math.random() - 0.5).slice(0, 6);
+            currentQIndex = 0;
+            p1Score = 0;
+            p2Score = 0;
+
+            showScreen('game-2p');
+            load2PQuestion();
+        }
+
+        function load2PQuestion() {
+            const q = questionQueue[currentQIndex];
+            document.getElementById('2p-round-num').textContent = currentQIndex + 1;
+
+            document.getElementById('p1-q-emoji').textContent = q.emoji;
+            document.getElementById('p1-q-title').textContent = q.title;
+            document.getElementById('p2-q-emoji').textContent = q.emoji;
+            document.getElementById('p2-q-title').textContent = q.title;
+
+            p1Input = null; p1Output = null;
+            p2Input = null; p2Output = null;
+            roundResponded = false;
+
+            update2PUI();
+            document.getElementById('2p-status-msg').textContent = '速く正解した方に+500pt！';
+        }
+
+        function p1SelectEnergy(type) {
+            audio.playTap();
+            if (!p1Input) p1Input = type;
+            else if (!p1Output) p1Output = type;
+            else p1Input = type;
+            update2PUI();
+        }
+
+        function p2SelectEnergy(type) {
+            audio.playTap();
+            if (!p2Input) p2Input = type;
+            else if (!p2Output) p2Output = type;
+            else p2Input = type;
+            update2PUI();
+        }
+
+        function update2PUI() {
+            const p1In = document.getElementById('p1-slot-in');
+            const p1Out = document.getElementById('p1-slot-out');
+            p1In.textContent = p1Input ? `入力: ${ENERGY_NAMES[p1Input]}` : '入力: 未選択';
+            p1Out.textContent = p1Output ? `出力: ${ENERGY_NAMES[p1Output]}` : '出力: 未選択';
+            document.getElementById('p1-btn-submit').disabled = !(p1Input && p1Output);
+            document.getElementById('p1-btn-submit').className = (p1Input && p1Output) ?
+                "w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-lg text-sm shadow cursor-pointer active:scale-95" :
+                "w-full py-2 bg-sky-600 text-white font-black rounded-lg text-sm shadow opacity-50 cursor-not-allowed";
+
+            const p2In = document.getElementById('p2-slot-in');
+            const p2Out = document.getElementById('p2-slot-out');
+            p2In.textContent = p2Input ? `入力: ${ENERGY_NAMES[p2Input]}` : '入力: 未選択';
+            p2Out.textContent = p2Output ? `出力: ${ENERGY_NAMES[p2Output]}` : '出力: 未選択';
+            document.getElementById('p2-btn-submit').disabled = !(p2Input && p2Output);
+            document.getElementById('p2-btn-submit').className = (p2Input && p2Output) ?
+                "w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg text-sm shadow cursor-pointer active:scale-95" :
+                "w-full py-2 bg-indigo-600 text-white font-black rounded-lg text-sm shadow opacity-50 cursor-not-allowed";
+
+            document.getElementById('p1-score-val').textContent = p1Score;
+            document.getElementById('p2-score-val').textContent = p2Score;
+        }
+
+        function p1SubmitAnswer() {
+            if (roundResponded || !p1Input || !p1Output) return;
+            const q = questionQueue[currentQIndex];
+
+            if (p1Input === q.in && p1Output === q.out) {
+                roundResponded = true;
+                p1Score += 500;
+                audio.playCorrect();
+                document.getElementById('2p-status-msg').textContent = '✨ P1(自分)が先に正解！ (+500pt)';
+                nextQTimer = setTimeout(() => next2PQuestion(), 1200);
+            } else {
+                audio.playIncorrect();
+                p1Input = null; p1Output = null;
+                update2PUI();
+            }
+        }
+
+        function p2SubmitAnswer() {
+            if (roundResponded || !p2Input || !p2Output) return;
+            const q = questionQueue[currentQIndex];
+
+            if (p2Input === q.in && p2Output === q.out) {
+                roundResponded = true;
+                p2Score += 500;
+                audio.playCorrect();
+                document.getElementById('2p-status-msg').textContent = '⚡ P2(相手)が先に正解！ (+500pt)';
+                nextQTimer = setTimeout(() => next2PQuestion(), 1200);
+            } else {
+                audio.playIncorrect();
+                p2Input = null; p2Output = null;
+                update2PUI();
+            }
+        }
+
+        function next2PQuestion() {
+            currentQIndex++;
+            if (currentQIndex < questionQueue.length) {
+                load2PQuestion();
+            } else {
+                finishGame();
+            }
+        }
+
+        /* ================= QUESTION & SELECTION HANDLERS ================= */
+        function loadQuestion() {
+            const q = questionQueue[currentQIndex];
+            document.getElementById('game-progress').textContent = `${currentQIndex + 1} / ${questionQueue.length}`;
+
+            document.getElementById('q-emoji').textContent = q.emoji;
+            document.getElementById('q-title').textContent = q.title;
+
+            selectedInput = null;
+            selectedOutput = null;
+            updateSelectionUI();
+        }
+
+        function selectEnergy(type) {
+            audio.playTap();
+            if (!selectedInput) {
+                selectedInput = type;
+            } else if (!selectedOutput) {
+                selectedOutput = type;
+            } else {
+                selectedInput = type;
+            }
+            updateSelectionUI();
+        }
+
+        function clearSelection(slot) {
+            audio.playTap();
+            if (slot === 'input') selectedInput = null;
+            if (slot === 'output') selectedOutput = null;
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const inputCard = document.getElementById('slot-input-card');
+            const inputVal = document.getElementById('slot-input-val');
+            if (selectedInput) {
+                inputVal.textContent = ENERGY_NAMES[selectedInput];
+                inputVal.className = "text-sm font-black text-sky-700";
+                inputCard.className = "light-card p-3 text-center border-2 border-sky-400 bg-sky-50 cursor-pointer";
+            } else {
+                inputVal.textContent = "タップして選択";
+                inputVal.className = "text-sm font-bold text-slate-400";
+                inputCard.className = "light-card p-3 text-center border-2 border-slate-200 cursor-pointer hover:border-sky-400 transition";
+            }
+
+            const outputCard = document.getElementById('slot-output-card');
+            const outputVal = document.getElementById('slot-output-val');
+            if (selectedOutput) {
+                outputVal.textContent = ENERGY_NAMES[selectedOutput];
+                outputVal.className = "text-sm font-black text-amber-700";
+                outputCard.className = "light-card p-3 text-center border-2 border-amber-400 bg-amber-50 cursor-pointer";
+            } else {
+                outputVal.textContent = "タップして選択";
+                outputVal.className = "text-sm font-bold text-slate-400";
+                outputCard.className = "light-card p-3 text-center border-2 border-slate-200 cursor-pointer hover:border-amber-400 transition";
+            }
+
+            // ボタンの選択ハイライト同期 (両方選択時のグラデーション表示対応)
+            const energyTypes = ['electric', 'thermal', 'kinetic', 'light', 'sound', 'chemical'];
+            energyTypes.forEach(type => {
+                const btn = document.getElementById(`btn-energy-${type}`);
+                if (btn) {
+                    btn.classList.remove('selected-in', 'selected-out', 'selected-both');
+                    if (selectedInput === type && selectedOutput === type) {
+                        btn.classList.add('selected-both');
+                    } else if (selectedInput === type) {
+                        btn.classList.add('selected-in');
+                    } else if (selectedOutput === type) {
+                        btn.classList.add('selected-out');
+                    }
+                }
+            });
+
+            const submitBtn = document.getElementById('btn-submit-answer');
+            if (selectedInput && selectedOutput) {
+                submitBtn.disabled = false;
+                submitBtn.className = "w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-sky-600 text-white font-black text-base shadow-lg transition cursor-pointer active:scale-95";
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.className = "w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-sky-600 text-white font-black text-base shadow-lg transition opacity-50 cursor-not-allowed";
+            }
+        }
+
+        function submitAnswer() {
+            if (!selectedInput || !selectedOutput) return;
+
+            const q = questionQueue[currentQIndex];
+
+            if (selectedInput === q.in && selectedOutput === q.out) {
+                audio.playCorrect();
+
+                if (gameType === 'ta') {
+                    stopTimer(); // 解説表示中はタイマー停止
+                    showExplanationModal(q);
+                } else {
+                    if (!roundResponded) {
+                        roundResponded = true;
+                        clearAllTimers();
+
+                        playerScore += 600;
+                        document.getElementById('cpu-score-player').textContent = playerScore;
+                        document.getElementById('cpu-state-text').textContent = '✨ あなたが先に正解！ (+600pt)';
+                        document.getElementById('cpu-state-text').className = 'font-bold text-sky-600';
+
+                        nextQTimer = setTimeout(() => {
+                            nextQuestion();
+                        }, 1000);
+                    }
+                }
+            } else {
+                audio.playIncorrect();
+
+                if (gameType === 'ta') {
+                    penaltyTime += 3;
+                    const toast = document.getElementById('penalty-toast');
+                    toast.classList.remove('hidden');
+                    const qCard = document.getElementById('question-card');
+                    qCard.classList.add('animate-shake');
+
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                        qCard.classList.remove('animate-shake');
+                    }, 700);
+
+                    selectedInput = null;
+                    selectedOutput = null;
+                    updateSelectionUI();
+                } else {
+                    document.getElementById('cpu-state-text').textContent = '❌ 不正解！再挑戦しよう';
+                    selectedInput = null;
+                    selectedOutput = null;
+                    updateSelectionUI();
+                }
+            }
+        }
+
+        function showExplanationModal(q) {
+            document.getElementById('exp-emoji-title').textContent = `${q.emoji} ${q.title} (${ENERGY_NAMES[q.in]} ➔ ${ENERGY_NAMES[q.out]})`;
+            document.getElementById('exp-text').textContent = q.exp;
+            document.getElementById('modal-explanation').classList.remove('hidden');
+        }
+
+        function closeExplanation() {
+            audio.playTap();
+            document.getElementById('modal-explanation').classList.add('hidden');
+            if (gameType === 'ta') startTimer(); // タイマー再開
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            if (currentQIndex < questionQueue.length) {
+                loadQuestion();
+                if (gameType === 'cpu') scheduleCpuResponse();
+            } else {
+                finishGame();
+            }
+        }
+
+        /* ================= GAME RESULT & RANKING ================= */
+        function finishGame() {
+            clearAllTimers();
+            audio.playFanfare();
+
+            const resTa = document.getElementById('result-ta-container');
+            const resCpu = document.getElementById('result-cpu-container');
+
+            if (gameType === 'ta') {
+                resTa.classList.remove('hidden');
+                resCpu.classList.add('hidden');
+
+                const finalTime = elapsedTime;
+                document.getElementById('result-clear-time').innerHTML = `${finalTime.toFixed(2)} <span class="text-xl">秒</span>`;
+
+                let rankText = '';
+                if (finalTime < 15.0) {
+                    rankText = '⚡【SSS級】「【神速】エネルギーマスター」';
+                } else if (finalTime < 22.0) {
+                    rankText = '🏆【SS級】「【特級】技術科エース研究員」';
+                } else if (finalTime < 30.0) {
+                    rankText = '🌟【S級】「【1級】エネルギースペシャリスト」';
+                } else if (finalTime < 40.0) {
+                    rankText = '🏅【A級】「【2級】エネルギープランナー」';
+                } else if (finalTime < 55.0) {
+                    rankText = '🔰【B級】「【3級】見習いエンジニア」';
+                } else {
+                    rankText = '🐣【C級】「【初心者】テクノロジー学習生」';
+                }
+
+                document.getElementById('result-rank-title').textContent = rankText;
+
+                if (!bestTime || finalTime < parseFloat(bestTime)) {
+                    bestTime = finalTime;
+                    bestRank = rankText;
+                    localStorage.setItem('tech_puzzle_best_time', bestTime);
+                    localStorage.setItem('tech_puzzle_best_rank', bestRank);
+                    updateStatsDisplay();
+                }
+            } else if (gameType === 'cpu') {
+                resTa.classList.add('hidden');
+                resCpu.classList.remove('hidden');
+
+                document.getElementById('res-label-p1').textContent = 'YOU';
+                document.getElementById('res-label-p2').textContent = 'CPU';
+                document.getElementById('res-score-player').textContent = playerScore;
+                document.getElementById('res-score-cpu').textContent = cpuScore;
+
+                const banner = document.getElementById('result-cpu-banner');
+                if (playerScore > cpuScore) {
+                    banner.textContent = 'VICTORY!';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-sky-600';
+                } else if (playerScore < cpuScore) {
+                    banner.textContent = 'DEFEAT...';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-rose-600';
+                } else {
+                    banner.textContent = 'DRAW!';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-amber-600';
+                }
+            } else if (gameType === '2p') {
+                resTa.classList.add('hidden');
+                resCpu.classList.remove('hidden');
+
+                document.getElementById('res-label-p1').textContent = 'PLAYER 1';
+                document.getElementById('res-label-p2').textContent = 'PLAYER 2';
+                document.getElementById('res-score-player').textContent = p1Score;
+                document.getElementById('res-score-cpu').textContent = p2Score;
+
+                const banner = document.getElementById('result-cpu-banner');
+                if (p1Score > p2Score) {
+                    banner.textContent = 'P1 WIN!';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-sky-600';
+                } else if (p1Score < p2Score) {
+                    banner.textContent = 'P2 WIN!';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-indigo-600';
+                } else {
+                    banner.textContent = 'DRAW!';
+                    banner.className = 'text-4xl md:text-5xl font-black font-orbitron text-amber-600';
+                }
+            }
+
+            showScreen('result');
+        }
+
+        function retryCurrentMode() {
+            if (gameType === 'ta') {
+                startTimeAttackMode();
+            } else if (gameType === 'cpu') {
+                startVsCpuMode(cpuDiff);
+            } else {
+                start2PlayerMode();
+            }
+        }
+
+        /* ================= ENERGY DICTIONARY RENDER ================= */
+        function renderDictionary() {
+            const grid = document.getElementById('dictionary-grid');
+            grid.innerHTML = '';
+
+            QUESTION_DATABASE.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "light-card p-3 border border-slate-200 hover:border-sky-300 transition flex items-start gap-3 shadow-sm";
+                card.innerHTML = `
+                    <div class="text-3xl p-2 bg-slate-50 rounded-xl border border-slate-200 shrink-0">
+                        ${item.emoji}
+                    </div>
+                    <div class="space-y-1">
+                        <div class="font-bold text-sm text-slate-800 flex items-center justify-between">
+                            <span>${item.title}</span>
+                        </div>
+                        <div class="text-xs font-bold text-sky-700 flex items-center gap-1.5">
+                            <span>${ENERGY_NAMES[item.in]}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px] text-slate-400"></i>
+                            <span class="text-amber-700">${ENERGY_NAMES[item.out]}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 leading-relaxed font-bold">${item.exp}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* Initialize App */
+        window.onload = function() {
+            updateStatsDisplay();
+        };
+    </script>
+</body>
+</html>
